@@ -1,23 +1,33 @@
+from typing import List
 from wordle import Wordle
 from letter_state import LetterState
 from colorama import Fore
+import random
 
 def main():
-    print("Hello Wordle!")
-    wordle = Wordle("APPLE")
+
+    word_set = load_word_set("data/wordle_words.txt")
+    secret = random.choice(list(word_set))
+    wordle = Wordle(secret)
 
     while wordle.can_attempt:
-        x = input("\nEnter your guess: ")
+        x = input("\nEnter your guess: ").upper()
         if len(x) != wordle.WORD_LENGTH:
             print(Fore.RED + f"Your guess must be {wordle.WORD_LENGTH} characters long." + Fore.RESET)
             continue
+
+        if not x in word_set:
+            print(Fore.RED + "Your guess is not a valid word." + Fore.RESET)
+            continue
+
         wordle.attempt(x)
         display_results(wordle)
 
-        if wordle.is_solved:
-            print("\nYour guess was correct!")
-        else:
-            print("\nYour guess was incorrect!")
+    if wordle.is_solved:
+        print("\nYou've solved the puzzle!")
+    else:
+        print("\nYou failed to solve the puzzle!")
+        print(f"The word was {wordle.secret}.\n")
 
 def display_results(wordle: Wordle):
     print(f"\nYou have {wordle.remaining_attempts} attempts remaining.")
@@ -35,7 +45,15 @@ def display_results(wordle: Wordle):
 
     draw_border_around(lines)
 
-def convert_result_to_color(result: list[LetterState]):
+def load_word_set(path: str):
+    word_set = set()
+    with open(path, "r") as f:
+        for line in f.readlines():
+            word = line.strip().upper()
+            word_set.add(word)
+        return word_set
+
+def convert_result_to_color(result: List[LetterState]):
     result_with_color = []
     for letter in result:
         if letter.is_in_position:
@@ -44,11 +62,12 @@ def convert_result_to_color(result: list[LetterState]):
             color = Fore.YELLOW
         else:
             color = Fore.WHITE
+
         colored_letter = color + letter.character + Fore.RESET
         result_with_color.append(colored_letter)
     return " ".join(result_with_color)
 
-def draw_border_around(lines: list[str], size: int=9, pad: int=1):
+def draw_border_around(lines: List[str], size: int=9, pad: int=1):
 
     content_length = size + pad * 2
     top_border = "┌" + "─" * content_length + "┐"
